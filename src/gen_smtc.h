@@ -3,6 +3,7 @@
 #ifndef GEN_SMTC_H
 #define GEN_SMTC_H
 #include <windows.h>
+#include "../winamp/wa_ipc.h"
 
 // plugin version (don't touch this)
 #define GPPHDR_VER 0x10
@@ -13,18 +14,18 @@
 extern "C"
 {
 	// these are callback functions/events which will be called by Winamp
-	int  init(void);
+	int init(void);
 	void config(void);
 	void quit(void);
 
-	// main structure with plugin information, version, name...
+	// Winamp GPP (General Purpose Plugin) structure
 	typedef struct
 	{
-		int version;            // version of the plugin structure
-		char* description;      // name of the plugin
-		int(*init)();           // function which will be executed on init event
-		void(*config)();        // function which will be executed on config event
-		void(*quit)();          // function which will be executed on quit event
+		int version;            // Version of the plugin structure
+		char* description;      // Name of the plugin
+		int(*init)();           // Function which will be executed on the `init` event
+		void(*config)();        // Function which will be executed on the `config` event
+		void(*quit)();          // Function which will be executed on the `quit` event
 		HWND hwndParent;        // handle of the Winamp main window (stored by Winamp when DLL is loaded)
 		HINSTANCE hDllInstance; // handle of this plugin DLL instance (stored by Winamp when DLL is loaded)
 	} winampGeneralPurposePlugin;

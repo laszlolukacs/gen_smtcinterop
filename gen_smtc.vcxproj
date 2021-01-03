@@ -21,14 +21,14 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CLRSupport>true</CLRSupport>
+    <CLRSupport>false</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CLRSupport>true</CLRSupport>
+    <CLRSupport>false</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -45,12 +45,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(WA_SDK_DIR)\Winamp;$(WA_SDK_DIR)\Wasabi;$(IncludePath)</IncludePath>
+    <IncludePath>$(WA_SDK_HOME)\Winamp;$(WA_SDK_HOME)\Wasabi;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)bld\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(WA_SDK_DIR)\Winamp;$(WA_SDK_DIR)\Wasabi;$(IncludePath)</IncludePath>
+    <IncludePath>$(WA_SDK_HOME)\Winamp;$(WA_SDK_HOME)\Wasabi;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)bld\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -58,6 +58,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link />
     <PostBuildEvent>
@@ -66,13 +68,21 @@
     <PostBuildEvent>
       <Message>Copy built DLL to local Winamp's Plugins directory</Message>
     </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>runtimeobject.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link />
+    <Link>
+      <AdditionalDependencies>runtimeobject.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -81,9 +91,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gen_smtc.h" />
+    <ClInclude Include="src\windows_smtc_wrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gen_smtc.cpp" />
+    <ClCompile Include="src\windows_smtc_wrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\gen_smtc.rc" />
