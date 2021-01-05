@@ -21,12 +21,15 @@
     <ClInclude Include="src\windows_smtc_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="system_media_controls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\gen_smtc.cpp">
+    <ClCompile Include="src\windows_smtc_wrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\windows_smtc_wrapper.cpp">
+    <ClCompile Include="src\gen_smtc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

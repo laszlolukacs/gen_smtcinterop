@@ -92,6 +92,7 @@
   <ItemGroup>
     <ClInclude Include="src\gen_smtc.h" />
     <ClInclude Include="src\windows_smtc_wrapper.h" />
+    <ClInclude Include="system_media_controls.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gen_smtc.cpp" />
