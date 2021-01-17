@@ -1,9 +1,17 @@
 /* See LICENSE for copyright details. */
 
 #include "gen_smtc.h"
+
+#ifdef _DEBUG
+#include <cassert>
+#endif
+#include <wa_ipc.h>
+
+#include "winamp_playback_wrapper.h"
 #include "windows_smtc_wrapper.h"
 
-winampGeneralPurposePlugin plugin = {
+winampGeneralPurposePlugin plugin =
+{
 	GPPHDR_VER,
 	PLUGIN_NAME,
 	init,
@@ -15,8 +23,6 @@ winampGeneralPurposePlugin plugin = {
 
 WNDPROC g_lpOriginalWindowProc = 0;
 
-WindowsSystemMediaTransportControlsWrapper smtc_wrapper;
-
 LRESULT CALLBACK WindowProc(
 	_In_ HWND   hwnd,
 	_In_ UINT   uMsg,
@@ -24,8 +30,15 @@ LRESULT CALLBACK WindowProc(
 	_In_ LPARAM lParam
 );
 
-int init() {
-	smtc_wrapper.initialize();
+SystemMediaControls& g_smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+
+int init()
+{
+#ifdef _DEBUG
+	assert(plugin.hwndParent != nullptr);
+#endif
+	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
+	g_smtc.initialize(plugin.hwndParent);
 
 	// replaces the WndProc of the parent window with the one defined in this class
 	g_lpOriginalWindowProc = (WNDPROC)(SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)WindowProc));
@@ -39,14 +52,14 @@ int init() {
 	return 0;
 }
 
-void config() {
-	//A basic messagebox that tells you the 'config' event has been triggered.
-	//You can change this later to do whatever you want (including nothing)
+void config()
+{
 	MessageBox(plugin.hwndParent, L"Config event triggered for gen_smtc.", L"", MB_OK);
 }
 
-void quit() {
-	smtc_wrapper.clear_metadata();
+void quit()
+{
+	g_smtc.clear_metadata();
 
 	// restores the original WndProc of the parent window when shutting down
 	SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)g_lpOriginalWindowProc);
@@ -59,14 +72,18 @@ void quit() {
 #endif
 }
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProc(
+	_In_ HWND hwnd,
+	_In_ UINT uMsg,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam)
 {
 	if (uMsg == WM_WA_IPC)
 	{
 		if (lParam == IPC_CB_MISC && wParam == IPC_CB_MISC_TITLE)
 		{
 			// just an example so far
-			smtc_wrapper.set_artist_and_track(L"DJ Mike Llama", L"Llama Whippin' Intro (WINAMP)");
+			g_smtc.set_artist_and_track(L"DJ Mike Llama", L"Llama Whippin' Intro (WINAMP)");
 		}
 	}
 

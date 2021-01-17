@@ -2,12 +2,16 @@
 
 #include "windows_smtc_wrapper.h"
 
-
+#ifdef _DEBUG
 #include <cassert>
-#include <systemmediatransportcontrolsinterop.h>
+#endif
+#include <SystemMediaTransportControlsInterop.h>
 #include <windows.media.control.h>
 #include <wrl/client.h>
 #include <wrl/event.h>
+
+#include "playback_controls.h"
+#include "winamp_playback_wrapper.h"
 
 using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::Media;
@@ -15,67 +19,14 @@ using namespace ABI::Windows::Storage::Streams;
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
 
-bool WindowsSystemMediaTransportControlsWrapper::create_hidden_smtc_window()
+bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 {
-#ifdef _DEBUG
-	std::wstring debug_message = L"Creating dummy window for SMTC...\n";
-	OutputDebugString(debug_message.c_str());
-#endif
-
-	// the default hWnd what the plug-in was received from Winamp was insufficient for SMTC usage
-	// so an appropriate invisible window is being created
-	WNDCLASS smtc_wnd_class{};
-	smtc_wnd_class.lpszClassName = smtc_wnd_class_name.c_str();
-	smtc_wnd_class.hInstance = nullptr;
-	smtc_wnd_class.lpfnWndProc = DefWindowProc;
-	GetLastError();
-
-	RegisterClass(&smtc_wnd_class);
-	assert(!GetLastError());
-
-	this->window = CreateWindowExW(
-		0,
-		smtc_wnd_class_name.c_str(),
-		smtc_wnd_class_name.c_str(),
-		0,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		0,
-		0,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr);
-	assert(this->window != nullptr);
-	assert(!GetLastError());
-
-	return true;
-}
-
-bool WindowsSystemMediaTransportControlsWrapper::destroy_hidden_smtc_window()
-{
-	if (this->window != nullptr)
+	if (hwnd == nullptr)
 	{
-		if (!DestroyWindow(this->window)) {
-#ifdef _DEBUG
-			std::wstring debug_message = L"Failed to destroy the hidden SMTC window\n";
-			OutputDebugString(debug_message.c_str());
-#endif
-		}
-
-		if (!UnregisterClass(smtc_wnd_class_name.c_str(), nullptr)) {
-#ifdef _DEBUG
-			std::wstring debug_message = L"Failed to unregister the window class for hidden SMTC window\n";
-			OutputDebugString(debug_message.c_str());
-#endif
-		}
+		return false;
 	}
 
-	return true;
-}
-
-bool WindowsSystemMediaTransportControlsWrapper::initialize()
-{
+	this->window = hwnd;
 	ComPtr<ISystemMediaTransportControlsInterop> smtc_interop;
 	HRESULT hr = GetActivationFactory(
 		HStringReference(RuntimeClass_Windows_Media_SystemMediaTransportControls).Get(),
@@ -85,22 +36,13 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize()
 		return false;
 	}
 
-	if (this->window == nullptr)
-	{
-		this->create_hidden_smtc_window();
-	}
-
-#ifdef _DEBUG
-	assert(this->window != nullptr);
-#endif
-
 	hr = smtc_interop->GetForWindow((this->window), IID_PPV_ARGS((this->smtc).GetAddressOf()));
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	auto handler = Microsoft::WRL::Callback<	ITypedEventHandler<
+	auto handler = Microsoft::WRL::Callback<ITypedEventHandler<
 		SystemMediaTransportControls*,
 		SystemMediaTransportControlsButtonPressedEventArgs*>>(
 			&WindowsSystemMediaTransportControlsWrapper::button_pressed_callback);
@@ -145,13 +87,15 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize()
 		return false;
 	}
 
-	hr = (this->smtc)->get_DisplayUpdater((this->smtc_display_updater).GetAddressOf());
+	hr = (this->smtc)->
+		put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	return true;
+	hr = (this->smtc)->get_DisplayUpdater((this->smtc_display_updater).GetAddressOf());
+	return FAILED(hr);
 }
 
 bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstring artist_name, std::wstring track_name)
@@ -184,6 +128,36 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 	return FAILED(hr);
 }
 
+bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackState playback_status)
+{
+	HRESULT hr;
+	switch (playback_status) {
+	case PlaybackState::stopped:
+		hr = (this->smtc)->
+			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
+		break;
+	case PlaybackState::paused:
+		hr = (this->smtc)->
+			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Paused);
+		break;
+	case PlaybackState::playing:
+		hr = (this->smtc)->
+			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Playing);
+		break;
+	default:
+		hr = (this->smtc)->
+			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
+	}
+
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	hr = (this->smtc_display_updater)->Update();
+	return FAILED(hr);
+}
+
 bool WindowsSystemMediaTransportControlsWrapper::clear_metadata()
 {
 	HRESULT hr = (this->smtc_display_updater)->ClearAll();
@@ -200,37 +174,34 @@ HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
 	ISystemMediaTransportControls* sender,
 	ISystemMediaTransportControlsButtonPressedEventArgs* args)
 {
+	PlaybackControls& playback_controls = WinampPlaybackWrapper::get_instance();
+	SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+
 	SystemMediaTransportControlsButton button;
 	HRESULT hr = args->get_Button(&button);
 	if (FAILED(hr))
+	{
 		return hr;
-	std::wstring debug_message = L"";
+	}
 
 	switch (button) {
 	case SystemMediaTransportControlsButton_Play:
-		debug_message = L"Play Button was hit\n";
-		OutputDebugString(debug_message.c_str());
-		//impl->OnPlay();
+		playback_controls.play();
+		smtc.set_playback_status(PlaybackState::playing);
 		break;
 	case SystemMediaTransportControlsButton_Pause:
-		debug_message = L"Pause Button was hit\n";
-		OutputDebugString(debug_message.c_str());
-		//impl->OnPause();
+		playback_controls.pause();
+		smtc.set_playback_status(PlaybackState::paused);
 		break;
 	case SystemMediaTransportControlsButton_Next:
-		debug_message = L"Next Button was hit\n";
-		OutputDebugString(debug_message.c_str());
-		//impl->OnNext();
+		playback_controls.next_track();
 		break;
 	case SystemMediaTransportControlsButton_Previous:
-		debug_message = L"Prev Button was hit\n";
-		OutputDebugString(debug_message.c_str());
-		//impl->OnPrevious();
+		playback_controls.previous_track();
 		break;
 	case SystemMediaTransportControlsButton_Stop:
-		debug_message = L"Stop Button was hit\n";
-		OutputDebugString(debug_message.c_str());
-		/*impl->OnStop();*/
+		playback_controls.stop();
+		smtc.set_playback_status(PlaybackState::stopped);
 		break;
 	case SystemMediaTransportControlsButton_Record:
 	case SystemMediaTransportControlsButton_FastForward:
@@ -246,6 +217,6 @@ HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
 WindowsSystemMediaTransportControlsWrapper::~WindowsSystemMediaTransportControlsWrapper()
 {
 	(this->smtc)->remove_ButtonPressed((this->event_registration_token));
-	this->clear_metadata();
-	this->destroy_hidden_smtc_window();
+	this->WindowsSystemMediaTransportControlsWrapper::clear_metadata();
+	this->window = nullptr;
 }

@@ -3,7 +3,6 @@
 #ifndef GEN_SMTC_H
 #define GEN_SMTC_H
 #include <windows.h>
-#include "../winamp/wa_ipc.h"
 
 // plugin version (don't touch this)
 #define GPPHDR_VER 0x10
