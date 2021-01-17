@@ -91,14 +91,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gen_smtc.h" />
+    <ClInclude Include="src\media_info.h" />
+    <ClInclude Include="src\media_info_provider.h" />
     <ClInclude Include="src\playback_controls.h" />
     <ClInclude Include="src\playback_state.h" />
     <ClInclude Include="src\system_media_controls.h" />
+    <ClInclude Include="src\winamp_media_info_provider.h" />
     <ClInclude Include="src\winamp_playback_wrapper.h" />
     <ClInclude Include="src\windows_smtc_wrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gen_smtc.cpp" />
+    <ClCompile Include="src\winamp_media_info_provider.cpp" />
     <ClCompile Include="src\winamp_playback_wrapper.cpp" />
     <ClCompile Include="src\windows_smtc_wrapper.cpp" />
   </ItemGroup>

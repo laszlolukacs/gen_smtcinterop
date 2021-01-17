@@ -7,6 +7,7 @@
 #endif
 #include <wa_ipc.h>
 
+#include "winamp_media_info_provider.h"
 #include "winamp_playback_wrapper.h"
 #include "windows_smtc_wrapper.h"
 
@@ -38,6 +39,7 @@ int init()
 	assert(plugin.hwndParent != nullptr);
 #endif
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
+	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
 	g_smtc.initialize(plugin.hwndParent);
 
 	// replaces the WndProc of the parent window with the one defined in this class
@@ -82,8 +84,17 @@ LRESULT CALLBACK WindowProc(
 	{
 		if (lParam == IPC_CB_MISC && wParam == IPC_CB_MISC_TITLE)
 		{
-			// just an example so far
-			g_smtc.set_artist_and_track(L"DJ Mike Llama", L"Llama Whippin' Intro (WINAMP)");
+			// whenever the currently played song changes in Winamp, the SMTC display will be updated
+			MediaInfoProvider& media_info_provider = WinampMediaInfoProvider::get_instance();
+			auto* const media_info = media_info_provider.get_metadata_of_current_song();
+			if (media_info != nullptr)
+			{
+				g_smtc.set_artist_and_track(media_info->get_artist(), media_info->get_title());
+			}
+			else
+			{
+				g_smtc.set_artist_and_track(L"", L"");
+			}
 		}
 	}
 

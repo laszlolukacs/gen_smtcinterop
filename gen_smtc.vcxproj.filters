@@ -33,6 +33,15 @@
     <ClInclude Include="src\playback_state.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\media_info_provider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\media_info.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\winamp_media_info_provider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\windows_smtc_wrapper.cpp">
@@ -42,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\winamp_playback_wrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\winamp_media_info_provider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,7 +2,7 @@
 
 #include "winamp_playback_wrapper.h"
 
-#include "../winamp/wa_ipc.h"
+#include <wa_ipc.h>
 
 #define WINAMP_PREVIOUS_TRACK_PARAM 40044
 #define WINAMP_START_PLAYBACK_PARAM 40045
