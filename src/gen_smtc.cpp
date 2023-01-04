@@ -5,9 +5,12 @@
 #ifdef _DEBUG
 #include <cassert>
 #endif
+
 #include <wa_ipc.h>
 
+#include "winamp_ipc_wrapper.h"
 #include "winamp_media_info_provider.h"
+#include "taglib_media_info_provider.h"
 #include "winamp_playback_wrapper.h"
 #include "windows_smtc_wrapper.h"
 
@@ -31,20 +34,23 @@ LRESULT CALLBACK WindowProc(
 	_In_ LPARAM lParam
 );
 
+// Winamp Wasabi services
 SystemMediaControls& g_smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+HWND WinampIpcWrapper::hwnd = nullptr;
 
 int init()
 {
 #ifdef _DEBUG
 	assert(plugin.hwndParent != nullptr);
 #endif
+	WinampIpcWrapper::hwnd = plugin.hwndParent;
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
+	WinampMediaInfoProvider::get_instance().init_winamp_services();
 	g_smtc.initialize(plugin.hwndParent);
 
 	// replaces the WndProc of the parent window with the one defined in this class
 	g_lpOriginalWindowProc = (WNDPROC)(SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)WindowProc));
-
 #ifdef _DEBUG
 	// If everything works you should see this message when you start Winamp once your plugin has been installed.
 	std::wstring debug_message = L"init() event for gen_smtc finished. Plugin installed successfully!\n";
@@ -62,6 +68,7 @@ void config()
 void quit()
 {
 	g_smtc.clear_metadata();
+	WinampMediaInfoProvider::get_instance().deregister_winamp_services();
 
 	// restores the original WndProc of the parent window when shutting down
 	SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)g_lpOriginalWindowProc);
@@ -85,16 +92,10 @@ LRESULT CALLBACK WindowProc(
 		if (lParam == IPC_CB_MISC && wParam == IPC_CB_MISC_TITLE)
 		{
 			// whenever the currently played song changes in Winamp, the SMTC display will be updated
-			MediaInfoProvider& media_info_provider = WinampMediaInfoProvider::get_instance();
-			auto* const media_info = media_info_provider.get_metadata_of_current_song();
-			if (media_info != nullptr)
-			{
-				g_smtc.set_artist_and_track(media_info->get_artist(), media_info->get_title());
-			}
-			else
-			{
-				g_smtc.set_artist_and_track(L"", L"");
-			}
+			MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
+			auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
+			auto const media_info = media_info_provider.get_metadata_of_song(current_filename);
+			g_smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
 		}
 	}
 

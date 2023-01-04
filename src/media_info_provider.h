@@ -7,7 +7,7 @@
 
 struct MediaInfoProvider
 {
-	virtual MediaInfo* get_metadata_of_current_song() = 0;
+	virtual MediaInfo get_metadata_of_song(std::wstring filename) = 0;
 
 	virtual ~MediaInfoProvider() = default;
 };

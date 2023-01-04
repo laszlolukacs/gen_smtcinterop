@@ -5,6 +5,9 @@
 
 #include <windows.h>
 
+#include "winamp_wasabi.h"
+#include <AlbumArt/svc_albumArtProvider.h>
+
 #include "media_info.h"
 #include "media_info_provider.h"
 
@@ -14,13 +17,10 @@ private:
 	WinampMediaInfoProvider() { }
 
 	HWND window = nullptr;
+	api_memmgr* wasabi_memory_manager = nullptr;
+	svc_albumArtProvider* album_art_provider = nullptr;
 
-	[[nodiscard]] wchar_t* wa_ipc_get_current_filename() const;
-	int wa_ipc_get_file_metadata(
-		const wchar_t* filename,
-		const wchar_t* metadata_to_query,
-		wchar_t* metadata_out,
-		unsigned int metadata_length);
+	unsigned int* wasabi_get_album_art(const wchar_t* filename) const;
 
 public:
 	static WinampMediaInfoProvider& get_instance()
@@ -33,7 +33,9 @@ public:
 	void operator=(WinampMediaInfoProvider const&) = delete;
 
 	void set_window(HWND window);
-	[[nodiscard]] MediaInfo* get_metadata_of_current_song() override;
+	void init_winamp_services();
+	void deregister_winamp_services();
+	[[nodiscard]] MediaInfo get_metadata_of_song(std::wstring filename) override;
 };
 
 #endif // WINAMP_MEDIA_INFO_PROVIDER_H

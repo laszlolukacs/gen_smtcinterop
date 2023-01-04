@@ -28,6 +28,10 @@ public:
 	{
 		return this->title;
 	}
+
+	~MediaInfo()
+	{
+	}
 };
 
 #endif // MEDIA_INFO_H
