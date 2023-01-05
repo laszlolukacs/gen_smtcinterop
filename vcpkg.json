@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "gen_smtc",
+  "name": "winamp-modern-windows-smtc-integration-generic-plugin",
   "version": "1.0",
   "dependencies": [
     {
@@ -14,5 +14,6 @@
       "name": "taglib",
       "version": "1.12.0"
     }
-  ]
+  ],
+  "builtin-baseline": "f9bea5d58186dc14e7e33132e43b52222147f51e"
 }

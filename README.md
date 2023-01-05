@@ -7,7 +7,7 @@ Windows System Media Transport Controls support plugin for Winamp
 * [vcpkg](https://vcpkg.io/en/index.html)
 * [Windows 10 SDK latest](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive/)
 * [Winamp 5.55 SDK](http://wiki.winamp.com/#Plug-in_Developer)
-* [TagLib](https://taglib.org/)
+* [TagLib](https://taglib.org/) ([statically linked](https://levelup.gitconnected.com/how-to-statically-link-c-libraries-with-vcpkg-visual-studio-2019-435c2d4ace03))
 
 ## Summary of set up
 * `git clone git@gitlab.com:laszlolukacs/gen_smtc.git`
