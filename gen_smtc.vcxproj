@@ -95,6 +95,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\album_art.h" />
     <ClInclude Include="src\gen_smtc.h" />
     <ClInclude Include="src\media_info.h" />
     <ClInclude Include="src\media_info_provider.h" />

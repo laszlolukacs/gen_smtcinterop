@@ -33,6 +33,11 @@ private:
 		ABI::Windows::Media::ISystemMediaTransportControls* sender,
 		ABI::Windows::Media::ISystemMediaTransportControlsButtonPressedEventArgs* args);
 
+	ComPtr<ABI::Windows::Storage::Streams::IDataWriter> mImageDataWriter;
+	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStream> mImageStream;
+	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStreamReference> mImageStreamReference;
+	ComPtr<ABI::Windows::Foundation::IAsyncOperation<unsigned int>> mStoreAsyncOperation;
+
 public:
 	static WindowsSystemMediaTransportControlsWrapper& get_instance()
 	{
@@ -48,6 +53,8 @@ public:
 	bool initialize(HWND = nullptr) override;
 	bool set_artist_and_track(std::wstring artist_name, std::wstring track_name) override;
 	bool set_playback_status(PlaybackState playback_status) override;
+	bool set_thumbnail(std::vector<unsigned char> thumbnail_bytes) override;
+	bool clear_thumbnail() override;
 	bool clear_metadata() override;
 
 	~WindowsSystemMediaTransportControlsWrapper() override;

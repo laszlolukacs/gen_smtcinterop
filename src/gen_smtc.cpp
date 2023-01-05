@@ -96,6 +96,14 @@ LRESULT CALLBACK WindowProc(
 			auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
 			auto const media_info = media_info_provider.get_metadata_of_song(current_filename);
 			g_smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
+			if (!media_info.empty() && !media_info.get_album_art().empty())
+			{
+				g_smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
+			}
+			else
+			{
+				g_smtc.clear_thumbnail();
+			}
 		}
 	}
 

@@ -51,6 +51,9 @@
     <ClInclude Include="src\winamp_ipc_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\album_art.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\windows_smtc_wrapper.cpp">
@@ -73,5 +76,8 @@
     <ResourceCompile Include="res\gen_smtc.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vcpkg.json" />
   </ItemGroup>
 </Project>
