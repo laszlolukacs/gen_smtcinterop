@@ -6,6 +6,9 @@
 #include <cassert>
 #endif
 
+#include <CommCtrl.h>
+#include <VersionHelpers.h>
+
 #include <wa_ipc.h>
 
 #include "winamp_ipc_wrapper.h"
@@ -13,6 +16,8 @@
 #include "taglib_media_info_provider.h"
 #include "winamp_playback_wrapper.h"
 #include "windows_smtc_wrapper.h"
+
+#pragma comment(lib, "ComCtl32.lib")
 
 winampGeneralPurposePlugin plugin =
 {
@@ -34,12 +39,20 @@ LRESULT CALLBACK WindowProc(
 	_In_ LPARAM lParam
 );
 
-// Winamp Wasabi services
-SystemMediaControls& g_smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
 HWND WinampIpcWrapper::hwnd = nullptr;
 
 int init()
 {
+	// System Media Transport Controls are available only starting from Windows 8
+	if (!IsWindows8OrGreater())
+	{
+#ifdef _DEBUG
+		std::wstring older_than_windows_8_message = L"This plugin requires at least Windows 8 to work properly.\n";
+		OutputDebugString(older_than_windows_8_message.c_str());
+#endif
+		return 0;
+	}
+
 #ifdef _DEBUG
 	assert(plugin.hwndParent != nullptr);
 #endif
@@ -47,7 +60,7 @@ int init()
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().init_winamp_services();
-	g_smtc.initialize(plugin.hwndParent);
+	WindowsSystemMediaTransportControlsWrapper::get_instance().initialize(plugin.hwndParent);
 
 	// replaces the WndProc of the parent window with the one defined in this class
 	g_lpOriginalWindowProc = (WNDPROC)(SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)WindowProc));
@@ -67,7 +80,12 @@ void config()
 
 void quit()
 {
-	g_smtc.clear_metadata();
+	if (!IsWindows8OrGreater())
+	{
+		return;
+	}
+
+	WindowsSystemMediaTransportControlsWrapper::get_instance().clear_metadata();
 	WinampMediaInfoProvider::get_instance().deregister_winamp_services();
 
 	// restores the original WndProc of the parent window when shutting down
@@ -95,14 +113,15 @@ LRESULT CALLBACK WindowProc(
 			MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
 			auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
 			auto const media_info = media_info_provider.get_metadata_of_song(current_filename);
-			g_smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
+			SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+			smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
 			if (!media_info.empty() && !media_info.get_album_art().empty())
 			{
-				g_smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
+				smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
 			}
 			else
 			{
-				g_smtc.clear_thumbnail();
+				smtc.clear_thumbnail();
 			}
 		}
 	}
