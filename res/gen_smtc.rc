@@ -20,12 +20,12 @@ BEGIN
 BLOCK "040904b0"
 BEGIN
 VALUE "CompanyName", "Laszlo Lukacs"
-VALUE "FileDescription", "System Media Transport Controls Winamp Plug-in"
+VALUE "FileDescription", "System Media Transport Controls Integration Winamp Plug-in"
 VALUE "FileVersion", "1.0.0.0"
 VALUE "InternalName", "gen_smtc"
-VALUE "LegalCopyright", "See LICENSE for details"
+VALUE "LegalCopyright", "Copyright (C) 2020-2023 Laszlo Lukacs, See LICENSE for details"
 VALUE "OriginalFilename", "gen_smtc.dll"
-VALUE "ProductName", "System Media Transport Controls Plug-in"
+VALUE "ProductName", "System Media Transport Controls Integration Plug-in"
 VALUE "ProductVersion", "1.0.0.0"
 END
 END

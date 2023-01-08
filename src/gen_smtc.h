@@ -8,7 +8,7 @@
 #define GPPHDR_VER 0x10
 
 // plugin name/title (change this to something you like)
-#define PLUGIN_NAME "System Media Transport Controls Plug-in"
+#define PLUGIN_NAME "System Media Transport Controls Integration Plug-in"
 
 /**
  * Handles the `init` event of a Winamp GPP.

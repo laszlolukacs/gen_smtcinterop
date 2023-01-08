@@ -75,7 +75,36 @@ int init()
 
 void config()
 {
-	MessageBox(plugin.hwndParent, L"Config event triggered for gen_smtc.", L"", MB_OK);
+	const wchar_t* about_text = L"Version 1.0\nCopyright (C) 2020-2023 Laszlo Lukacs\n\n\
+		This program is free software; you can redistribute it and/or modify\n\
+		it under the terms of the GNU General Public License as published by\n\
+		the Free Software Foundation; either version 2 of the License, or\n\
+		(at your option) any later version.\n\n\
+		This program is distributed in the hope that it will be useful,\n\
+		but WITHOUT ANY WARRANTY; without even the implied warranty of\n\
+		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n\
+		GNU General Public License for more details.\n\n\
+		You should have received a copy of the GNU General Public License along\n\
+		with this program; if not, write to the Free Software Foundation, Inc.,\n\
+		51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.";
+
+	int nButtonPressed = 0;
+	TASKDIALOGCONFIG TaskDialogConfig = { 0 };
+	TaskDialogConfig.cbSize = sizeof(TASKDIALOGCONFIG);
+	TaskDialogConfig.hwndParent = NULL;
+	TaskDialogConfig.hInstance = plugin.hDllInstance;
+	TaskDialogConfig.dwFlags = TDF_SIZE_TO_CONTENT;
+	TaskDialogConfig.dwCommonButtons = TDCBF_OK_BUTTON;
+	TaskDialogConfig.pszWindowTitle = L"About";
+	TaskDialogConfig.pszMainInstruction = L"System Media Transport Controls Integration Plug-in";
+	TaskDialogConfig.pszContent = about_text;
+	if (!IsWindows8OrGreater())
+	{
+		TaskDialogConfig.pszFooter = L"This plugin requires at least Windows 8 to work properly. It will not function on your system.";
+		TaskDialogConfig.pszFooterIcon = TD_ERROR_ICON;
+	}
+
+	TaskDialogIndirect(&TaskDialogConfig, &nButtonPressed, NULL, NULL);
 }
 
 void quit()

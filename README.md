@@ -1,6 +1,6 @@
 # gen_smtc
 
-Windows System Media Transport Controls support plugin for Winamp
+Windows [System Media Transport Controls](https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/integrate-with-systemmediatransportcontrols) Integration Plug-in for Winamp
 
 ## Dependencies
 * [Visual C++ 2022 (v143)](https://visualstudio.microsoft.com/downloads/)
