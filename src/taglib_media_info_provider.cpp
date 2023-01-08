@@ -70,10 +70,9 @@ AlbumArt TaglibMediaInfoProvider::extract_album_art_from_mp4(TagLib::MP4::File* 
 {
 	const std::string album_cover_art_key = "covr";
 	TagLib::MP4::Tag* tag = file->tag();
-	const TagLib::MP4::ItemListMap& mp4_item_list_map = tag->itemListMap();
-	if (mp4_item_list_map.contains(album_cover_art_key))
+	if (tag->item(album_cover_art_key).isValid())
 	{
-		const TagLib::MP4::CoverArtList& cover_art_list = mp4_item_list_map[album_cover_art_key].toCoverArtList();
+		const TagLib::MP4::CoverArtList& cover_art_list = tag->item(album_cover_art_key).toCoverArtList();
 		if (!cover_art_list.isEmpty())
 		{
 			const TagLib::MP4::CoverArt* cover_art = &(cover_art_list.front());

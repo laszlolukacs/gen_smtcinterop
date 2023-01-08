@@ -5,6 +5,8 @@
 #include <cassert>
 #include "winamp_ipc_wrapper.h"
 
+#define SKIP_WINAMP_SERVICES true
+
 void WinampMediaInfoProvider::set_window(HWND window)
 {
 	this->window = window;
@@ -12,6 +14,11 @@ void WinampMediaInfoProvider::set_window(HWND window)
 
 void WinampMediaInfoProvider::init_winamp_services()
 {
+	if (SKIP_WINAMP_SERVICES)
+	{
+		return;
+	}
+
 	if (this->window == nullptr)
 	{
 		return;
@@ -91,25 +98,18 @@ unsigned int* WinampMediaInfoProvider::wasabi_get_album_art(const wchar_t* filen
 	size_t album_art_size = 0;
 	wchar_t* album_art_mime_type = nullptr;
 
-#ifdef _DEBUG
-	assert(album_art_provider != nullptr);
-#endif
-	bool isMine = album_art_provider->IsMine(filename);
-
-	int type = album_art_provider->ProviderType();
-
 	int result = album_art_provider->GetAlbumArtData(filename, L"cover", &album_art_pixels, &album_art_size, &album_art_mime_type);
 	if (result != ALBUMARTPROVIDER_SUCCESS)
 	{
 #ifdef _DEBUG
-		std::wstring debug_message = L"album_art_provider->GetAlbumArtData FAILED TO LOAD ALBUM ART\n";
+		std::wstring debug_message = L"album_art_provider->GetAlbumArtData loading album art FAILED\n";
 		OutputDebugString(debug_message.c_str());
 #endif
 	}
 	else
 	{
 #ifdef _DEBUG
-		std::wstring debug_message = L"album_art_provider->GetAlbumArtData SUCCESSFULLY LOADED ALBUM ART\n";
+		std::wstring debug_message = L"album_art_provider->GetAlbumArtData loading album art SUCCEEDED\n";
 		OutputDebugString(debug_message.c_str());
 #endif
 	}
@@ -119,6 +119,12 @@ unsigned int* WinampMediaInfoProvider::wasabi_get_album_art(const wchar_t* filen
 
 void WinampMediaInfoProvider::deregister_winamp_services()
 {
+	if (SKIP_WINAMP_SERVICES)
+	{
+		this->window = nullptr;
+		return;
+	}
+
 	if (this->window == nullptr)
 	{
 		return;

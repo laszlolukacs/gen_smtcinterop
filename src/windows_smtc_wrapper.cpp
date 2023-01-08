@@ -253,8 +253,12 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 			});
 
 	hr = mStoreAsyncOperation->put_Completed(store_async_callback.Get());
+	if (FAILED(hr))
+	{
+		return false;
+	}
 
-	return false;
+	return true;
 }
 
 bool WindowsSystemMediaTransportControlsWrapper::clear_thumbnail()
@@ -270,6 +274,8 @@ bool WindowsSystemMediaTransportControlsWrapper::clear_thumbnail()
 	{
 		return false;
 	}
+
+	return true;
 }
 
 bool WindowsSystemMediaTransportControlsWrapper::clear_metadata()
