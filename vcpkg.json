@@ -5,8 +5,7 @@
   "dependencies": [
     {
       "name": "taglib",
-      "version>=": "1.12.0",
-      "host": true
+      "version>=": "1.12.0"
     }
   ],
   "overrides": [
