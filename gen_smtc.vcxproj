@@ -111,7 +111,6 @@
     <ClInclude Include="src\media_info.h" />
     <ClInclude Include="src\media_info_provider.h" />
     <ClInclude Include="src\taglib_media_info_provider.h" />
-    <ClInclude Include="src\winamp_wasabi.h" />
     <ClInclude Include="src\playback_controls.h" />
     <ClInclude Include="src\playback_state.h" />
     <ClInclude Include="src\system_media_controls.h" />

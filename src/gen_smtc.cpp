@@ -59,7 +59,6 @@ int init()
 	WinampIpcWrapper::hwnd = plugin.hwndParent;
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
-	WinampMediaInfoProvider::get_instance().init_winamp_services();
 	WindowsSystemMediaTransportControlsWrapper::get_instance().initialize(plugin.hwndParent);
 
 	// replaces the WndProc of the parent window with the one defined in this class
@@ -115,7 +114,6 @@ void quit()
 	}
 
 	WindowsSystemMediaTransportControlsWrapper::get_instance().clear_metadata();
-	WinampMediaInfoProvider::get_instance().deregister_winamp_services();
 
 	// restores the original WndProc of the parent window when shutting down
 	SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)g_lpOriginalWindowProc);
