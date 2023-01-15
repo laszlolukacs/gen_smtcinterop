@@ -16,6 +16,8 @@ class WindowsSystemMediaTransportControlsWrapper : public SystemMediaControls
 private:
 	WindowsSystemMediaTransportControlsWrapper() { }
 
+	bool initialized = false;
+
 	HWND window = nullptr;
 
 	ComPtr<ABI::Windows::Media::ISystemMediaTransportControls>
@@ -27,16 +29,20 @@ private:
 	ComPtr<ABI::Windows::Media::IMusicDisplayProperties>
 		smtc_music_display_properties;
 
+	ComPtr<ABI::Windows::Storage::Streams::IDataWriter>
+		thumbnail_pic_data_writer;
+
+	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStream>
+		thumbnail_pic_stream;
+
+	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStreamReference>
+		thumbnail_pic_stream_reference;
+
 	EventRegistrationToken event_registration_token = EventRegistrationToken{ 0 };
 
 	static HRESULT button_pressed_callback(
 		ABI::Windows::Media::ISystemMediaTransportControls* sender,
 		ABI::Windows::Media::ISystemMediaTransportControlsButtonPressedEventArgs* args);
-
-	ComPtr<ABI::Windows::Storage::Streams::IDataWriter> mImageDataWriter;
-	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStream> mImageStream;
-	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStreamReference> mImageStreamReference;
-	ComPtr<ABI::Windows::Foundation::IAsyncOperation<unsigned int>> mStoreAsyncOperation;
 
 public:
 	static WindowsSystemMediaTransportControlsWrapper& get_instance()

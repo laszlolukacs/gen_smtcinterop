@@ -6,8 +6,6 @@
 #include <cassert>
 #endif
 #include <SystemMediaTransportControlsInterop.h>
-#include <windows.media.control.h>
-#include <wrl/client.h>
 #include <wrl/event.h>
 
 #include "playback_controls.h"
@@ -21,8 +19,9 @@ using namespace Microsoft::WRL::Wrappers;
 
 bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 {
-	if (hwnd == nullptr)
+	if (hwnd == nullptr || !IsWindow(hwnd))
 	{
+		initialized = false;
 		return false;
 	}
 
@@ -31,14 +30,16 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 	HRESULT hr = GetActivationFactory(
 		HStringReference(RuntimeClass_Windows_Media_SystemMediaTransportControls).Get(),
 		smtc_interop.GetAddressOf());
-	if (FAILED(hr))
+	if (FAILED(hr) || smtc_interop == nullptr)
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = smtc_interop->GetForWindow((this->window), IID_PPV_ARGS((this->smtc).GetAddressOf()));
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
@@ -49,41 +50,50 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 
 	hr = (this->smtc)->add_ButtonPressed(handler.Get(), &(this->event_registration_token));
 	if (FAILED(hr))
+	{
+		initialized = false;
 		return false;
+	}
 
 	hr = (this->smtc)->put_IsEnabled(true);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = (this->smtc)->put_IsPlayEnabled(true);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = (this->smtc)->put_IsPauseEnabled(true);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = (this->smtc)->put_IsNextEnabled(true);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = (this->smtc)->put_IsPreviousEnabled(true);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = (this->smtc)->put_IsStopEnabled(true);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
@@ -91,15 +101,28 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 		put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
 	if (FAILED(hr))
 	{
+		initialized = false;
 		return false;
 	}
 
 	hr = (this->smtc)->get_DisplayUpdater((this->smtc_display_updater).GetAddressOf());
-	return FAILED(hr);
+	if (FAILED(hr))
+	{
+		initialized = false;
+		return false;
+	}
+
+	initialized = true;
+	return true;
 }
 
 bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstring artist_name, std::wstring track_name)
 {
+	if (!initialized || this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
+
 	HRESULT hr = (this->smtc_display_updater)->put_Type(MediaPlaybackType_Music);
 	if (FAILED(hr))
 	{
@@ -130,6 +153,13 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 
 bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackState playback_status)
 {
+	if (!initialized
+		|| this->smtc == nullptr
+		|| this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
+
 	HRESULT hr;
 	switch (playback_status) {
 	case PlaybackState::stopped:
@@ -160,64 +190,71 @@ bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackSta
 
 bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsigned char> thumbnail_bytes)
 {
+	if (!initialized || this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
 
 	HRESULT hr = ActivateInstance(
 		HStringReference(RuntimeClass_Windows_Storage_Streams_InMemoryRandomAccessStream).Get(),
-		mImageStream.GetAddressOf());
+		thumbnail_pic_stream.GetAddressOf());
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	ComPtr<IOutputStream> outputStream;
-	hr = mImageStream.As(&outputStream);
+	ComPtr<IOutputStream> output_stream;
+	hr = thumbnail_pic_stream.As(&output_stream);
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	ComPtr<IDataWriterFactory> dataWriterFactory;
+	ComPtr<IDataWriterFactory> data_writer_factory;
 	hr = GetActivationFactory(
 		HStringReference(RuntimeClass_Windows_Storage_Streams_DataWriter).Get(),
-		dataWriterFactory.GetAddressOf());
+		data_writer_factory.GetAddressOf());
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	hr = dataWriterFactory->CreateDataWriter(outputStream.Get(),
-		mImageDataWriter.GetAddressOf());
+	hr = data_writer_factory->CreateDataWriter(output_stream.Get(),
+		thumbnail_pic_data_writer.GetAddressOf());
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	hr = mImageDataWriter->WriteBytes(
+	hr = thumbnail_pic_data_writer->WriteBytes(
 		thumbnail_bytes.size(), thumbnail_bytes.data());
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
-	hr = mImageDataWriter->StoreAsync(&mStoreAsyncOperation);
+	ComPtr<IAsyncOperation<unsigned int>> store_async_operation;
+	hr = thumbnail_pic_data_writer->StoreAsync(&store_async_operation);
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
 	auto store_async_callback =
-		Microsoft::WRL::Callback<ABI::Windows::Foundation::IAsyncOperationCompletedHandler<unsigned int>>(
-			[this](ABI::Windows::Foundation::IAsyncOperation<unsigned int>* async_op, ABI::Windows::Foundation::AsyncStatus status) mutable
+		Callback<IAsyncOperationCompletedHandler<unsigned int>>(
+			[this](IAsyncOperation<unsigned int>* async_op,
+				AsyncStatus async_status) mutable
 			{
 				// Check the async operation completed successfully.
-				ABI::Windows::Foundation::IAsyncInfo* async_info;
+				IAsyncInfo* async_info;
 				HRESULT hr = async_op->QueryInterface(IID_IAsyncInfo, reinterpret_cast<void**>(&async_info));
 				if (FAILED(hr))
 				{
 					return hr;
 				}
+
 				async_info->get_ErrorCode(&hr);
-				if (SUCCEEDED(hr) && status == ABI::Windows::Foundation::AsyncStatus::Completed)
+				if (SUCCEEDED(hr) && async_status == AsyncStatus::Completed)
 				{
 					Microsoft::WRL::ComPtr<IRandomAccessStreamReferenceStatics>
 						reference_statics;
@@ -230,14 +267,14 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 						return hr;
 					}
 
-					result = reference_statics->CreateFromStream(mImageStream.Get(),
-						&mImageStreamReference);
+					result = reference_statics->CreateFromStream(thumbnail_pic_stream.Get(),
+						&thumbnail_pic_stream_reference);
 					if (FAILED(result))
 					{
 						return hr;
 					}
 
-					result = (this->smtc_display_updater)->put_Thumbnail(mImageStreamReference.Get());
+					result = (this->smtc_display_updater)->put_Thumbnail(thumbnail_pic_stream_reference.Get());
 					if (FAILED(result))
 					{
 						return hr;
@@ -249,10 +286,11 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 						return hr;
 					}
 				}
+
 				return hr;
 			});
 
-	hr = mStoreAsyncOperation->put_Completed(store_async_callback.Get());
+	hr = store_async_operation->put_Completed(store_async_callback.Get());
 	if (FAILED(hr))
 	{
 		return false;
@@ -263,6 +301,11 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 
 bool WindowsSystemMediaTransportControlsWrapper::clear_thumbnail()
 {
+	if (!initialized || this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
+
 	HRESULT result = (this->smtc_display_updater)->put_Thumbnail(nullptr);
 	if (FAILED(result))
 	{
@@ -280,9 +323,19 @@ bool WindowsSystemMediaTransportControlsWrapper::clear_thumbnail()
 
 bool WindowsSystemMediaTransportControlsWrapper::clear_metadata()
 {
+	if (!initialized || this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
+
 	clear_thumbnail();
 	HRESULT hr = (this->smtc_display_updater)->ClearAll();
 	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	if (this->smtc == nullptr)
 	{
 		return false;
 	}
