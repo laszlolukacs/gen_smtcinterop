@@ -39,16 +39,18 @@ LRESULT CALLBACK WindowProc(
 	_In_ LPARAM lParam
 );
 
+bool initialized = false;
+
 HWND WinampIpcWrapper::hwnd = nullptr;
 
 int init()
 {
-	// System Media Transport Controls are available only starting from Windows 8
-	if (!IsWindows8OrGreater())
+	// System Media Transport Controls are available in Windows 8, but can be used from desktop applications only starting with Windows 10
+	if (!IsWindows10OrGreater())
 	{
 #ifdef _DEBUG
-		std::wstring older_than_windows_8_message = L"This plugin requires at least Windows 8 to work properly.\n";
-		OutputDebugString(older_than_windows_8_message.c_str());
+		std::wstring older_than_windows_10_message = L"This plugin requires at least Windows 10 to work properly.\n";
+		OutputDebugString(older_than_windows_10_message.c_str());
 #endif
 		return 0;
 	}
@@ -56,10 +58,19 @@ int init()
 #ifdef _DEBUG
 	assert(plugin.hwndParent != nullptr);
 #endif
+	initialized = WindowsSystemMediaTransportControlsWrapper::get_instance().initialize(plugin.hwndParent);
+	if (!initialized)
+	{
+#ifdef _DEBUG
+		std::wstring debug_message = L"init() event for gen_smtc did not succeed, unable to initialize System Media Transport Controls.\n";
+		OutputDebugString(debug_message.c_str());
+#endif
+		return 0;
+	}
+
 	WinampIpcWrapper::hwnd = plugin.hwndParent;
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
-	WindowsSystemMediaTransportControlsWrapper::get_instance().initialize(plugin.hwndParent);
 
 	// replaces the WndProc of the parent window with the one defined in this class
 	g_lpOriginalWindowProc = (WNDPROC)(SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)WindowProc));
@@ -97,9 +108,9 @@ void config()
 	TaskDialogConfig.pszWindowTitle = L"About";
 	TaskDialogConfig.pszMainInstruction = L"System Media Transport Controls Integration Plug-in";
 	TaskDialogConfig.pszContent = about_text;
-	if (!IsWindows8OrGreater())
+	if (!IsWindows10OrGreater())
 	{
-		TaskDialogConfig.pszFooter = L"This plugin requires at least Windows 8 to work properly. It will not function on your system.";
+		TaskDialogConfig.pszFooter = L"This plugin requires at least Windows 10 to work properly. It will not function on your system.";
 		TaskDialogConfig.pszFooterIcon = TD_ERROR_ICON;
 	}
 
@@ -108,12 +119,13 @@ void config()
 
 void quit()
 {
-	if (!IsWindows8OrGreater())
+	if (!IsWindows10OrGreater() || !initialized)
 	{
 		return;
 	}
 
 	WindowsSystemMediaTransportControlsWrapper::get_instance().clear_metadata();
+	WinampIpcWrapper::hwnd = nullptr;
 
 	// restores the original WndProc of the parent window when shutting down
 	SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)g_lpOriginalWindowProc);
