@@ -15,6 +15,12 @@ private:
 
 	HWND window = nullptr;
 
+	[[nodiscard]]
+	MediaInfo get_specified_metadata_of_file(
+		const wchar_t* filename,
+		const wchar_t* metadata_artist,
+		const wchar_t* metadata_title);
+
 public:
 	static WinampMediaInfoProvider& get_instance()
 	{

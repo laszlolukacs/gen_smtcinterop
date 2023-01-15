@@ -134,21 +134,38 @@ LRESULT CALLBACK WindowProc(
 {
 	if (uMsg == WM_WA_IPC)
 	{
-		if (lParam == IPC_CB_MISC && wParam == IPC_CB_MISC_TITLE)
+		if (lParam == IPC_CB_MISC && initialized)
 		{
-			// whenever the currently played song changes in Winamp, the SMTC display will be updated
-			MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
-			auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
-			auto const media_info = media_info_provider.get_metadata_of_song(current_filename);
 			SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
-			smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
-			if (!media_info.empty() && !media_info.get_album_art().empty())
+			if (wParam == IPC_CB_MISC_TITLE)
 			{
-				smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
+				// whenever the currently played song changes in Winamp, the SMTC display will be updated
+				MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
+				auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
+				auto media_info = media_info_provider.get_metadata_of_song(current_filename);
+				if (media_info.empty())
+				{
+					// fall back to Winamp API when TagLib cannot extract metadata (e.g. in case of online streams)
+					MediaInfoProvider& media_info_provider = WinampMediaInfoProvider::get_instance();
+					media_info = media_info_provider.get_metadata_of_song(current_filename);
+				}
+
+				if (!media_info.empty())
+				{
+					smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
+					if (!media_info.empty() && !media_info.get_album_art().empty())
+					{
+						smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
+					}
+					else
+					{
+						smtc.clear_thumbnail();
+					}
+				}
 			}
-			else
+			else if (wParam == IPC_CB_MISC_STATUS)
 			{
-				smtc.clear_thumbnail();
+				smtc.set_playback_status(WinampIpcWrapper::wa_ipc_is_playing());
 			}
 		}
 	}

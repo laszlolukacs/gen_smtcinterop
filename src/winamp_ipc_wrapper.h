@@ -8,8 +8,7 @@
 #include <windows.h>
 #include <wa_ipc.h>
 
-#define WINAMP_METADATA_ARTIST L"artist"
-#define WINAMP_METADATA_TITLE L"title"
+#include "playback_state.h"
 
 struct WinampIpcWrapper
 {
@@ -59,6 +58,24 @@ struct WinampIpcWrapper
 		return is_ipc_call_supported;
 	}
 
+	static PlaybackState wa_ipc_is_playing()
+	{
+		const int is_wa_playing = SendMessage(
+			hwnd,
+			WM_WA_IPC,
+			0,
+			IPC_ISPLAYING);
+		switch (is_wa_playing) {
+		case 1:
+			return PlaybackState::playing;
+		case 3:
+			return PlaybackState::paused;
+		case 0:
+			return PlaybackState::stopped;
+		default:
+			return PlaybackState::none;
+		}
+	}
 };
 
 #endif // WINAMP_IPC_WRAPPER_H
