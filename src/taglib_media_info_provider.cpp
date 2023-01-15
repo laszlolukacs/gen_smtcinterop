@@ -1,3 +1,5 @@
+/* See LICENSE for copyright details. */
+
 #include "taglib_media_info_provider.h"
 
 #include <algorithm>
@@ -159,7 +161,7 @@ AlbumArt TaglibMediaInfoProvider::extract_album_art(const TagLib::FileRef& fr)
 MediaInfo TaglibMediaInfoProvider::get_metadata_of_song(std::wstring filename)
 {
 	if (!filename.empty()) {
-		const TagLib::FileRef f(filename.c_str());
+		const TagLib::FileRef f(filename.c_str(), true);
 		if (f.tag() != nullptr && !f.tag()->isEmpty())
 		{
 			TagLib::String artist = f.tag()->artist();
