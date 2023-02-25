@@ -33,6 +33,25 @@ struct WinampIpcWrapper
 		return std::wstring(filename);
 	}
 
+	[[nodiscard]] static std::wstring wa_ipc_get_current_title()
+	{
+		const int current_playlist_index =
+			SendMessage(
+				hwnd,
+				WM_WA_IPC,
+				0,
+				IPC_GETLISTPOS);
+
+		auto* const track_title =
+			(wchar_t*)SendMessage(
+				hwnd,
+				WM_WA_IPC,
+				current_playlist_index,
+				IPC_GETPLAYLISTTITLEW);
+
+		return std::wstring(track_title);
+	}
+
 	static int wa_ipc_get_file_metadata(
 		const wchar_t* filename,
 		const wchar_t* metadata_to_query,

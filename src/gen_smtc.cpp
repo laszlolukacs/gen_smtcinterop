@@ -30,6 +30,12 @@ winampGeneralPurposePlugin plugin =
 	0
 };
 
+bool initialized = false;
+
+HWND WinampIpcWrapper::hwnd = nullptr;
+
+void on_song_change();
+
 WNDPROC g_lpOriginalWindowProc = 0;
 
 LRESULT CALLBACK WindowProc(
@@ -38,10 +44,6 @@ LRESULT CALLBACK WindowProc(
 	_In_ WPARAM wParam,
 	_In_ LPARAM lParam
 );
-
-bool initialized = false;
-
-HWND WinampIpcWrapper::hwnd = nullptr;
 
 int init()
 {
@@ -71,6 +73,8 @@ int init()
 	WinampIpcWrapper::hwnd = plugin.hwndParent;
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
+
+	on_song_change();
 
 	// replaces the WndProc of the parent window with the one defined in this class
 	g_lpOriginalWindowProc = (WNDPROC)(SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)WindowProc));
@@ -138,6 +142,37 @@ void quit()
 #endif
 }
 
+void on_song_change()
+{
+	auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
+	MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
+	auto media_info = media_info_provider.get_metadata_of_song(current_filename);
+	if (media_info.empty())
+	{
+		// fall back to Winamp API when TagLib cannot extract metadata (e.g. in case of online streams)
+		MediaInfoProvider& media_info_provider = WinampMediaInfoProvider::get_instance();
+		media_info = media_info_provider.get_metadata_of_song(current_filename);
+	}
+
+	SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+	if (!media_info.empty())
+	{
+		smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
+		if (!media_info.empty() && !media_info.get_album_art().empty())
+		{
+			smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
+		}
+		else
+		{
+			smtc.clear_thumbnail();
+		}
+	}
+	else
+	{
+		smtc.clear_metadata();
+	}
+}
+
 LRESULT CALLBACK WindowProc(
 	_In_ HWND hwnd,
 	_In_ UINT uMsg,
@@ -148,36 +183,14 @@ LRESULT CALLBACK WindowProc(
 	{
 		if (lParam == IPC_CB_MISC && initialized)
 		{
-			SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
 			if (wParam == IPC_CB_MISC_TITLE)
 			{
 				// whenever the currently played song changes in Winamp, the SMTC display will be updated
-				MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
-				auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
-				auto media_info = media_info_provider.get_metadata_of_song(current_filename);
-				if (media_info.empty())
-				{
-					// fall back to Winamp API when TagLib cannot extract metadata (e.g. in case of online streams)
-					MediaInfoProvider& media_info_provider = WinampMediaInfoProvider::get_instance();
-					media_info = media_info_provider.get_metadata_of_song(current_filename);
-				}
-
-				if (!media_info.empty())
-				{
-					smtc.set_artist_and_track(media_info.get_artist(), media_info.get_title());
-					if (!media_info.empty() && !media_info.get_album_art().empty())
-					{
-						smtc.set_thumbnail(media_info.get_album_art().get_pixel_data());
-					}
-					else
-					{
-						smtc.clear_thumbnail();
-					}
-				}
+				on_song_change();
 			}
 			else if (wParam == IPC_CB_MISC_STATUS)
 			{
-				smtc.set_playback_status(WinampIpcWrapper::wa_ipc_is_playing());
+				WindowsSystemMediaTransportControlsWrapper::get_instance().set_playback_status(WinampIpcWrapper::wa_ipc_is_playing());
 			}
 		}
 	}

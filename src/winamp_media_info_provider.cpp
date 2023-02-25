@@ -23,9 +23,14 @@ MediaInfo WinampMediaInfoProvider::get_metadata_of_song(std::wstring filename)
 		MediaInfo media_info = get_specified_metadata_of_file(current_filename, WINAMP_METADATA_ARTIST, WINAMP_METADATA_TITLE);
 		if (media_info.empty())
 		{
-			// whenever loading normal media info gives no result, attempt to load stream media info still via the Winamp API
 			// loading stream media info: http://forums.shoutcast.com/showthread.php?t=458950
 			media_info = get_specified_metadata_of_file(current_filename, WINAMP_METADATA_STREAM_NAME, WINAMP_METADATA_STREAM_TITLE);
+		}
+
+		if (media_info.empty())
+		{
+			const auto track_title = WinampIpcWrapper::wa_ipc_get_current_title();
+			return MediaInfo(L"", track_title);
 		}
 
 		return media_info;
