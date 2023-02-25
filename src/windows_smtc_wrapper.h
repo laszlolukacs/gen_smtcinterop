@@ -29,20 +29,14 @@ private:
 	ComPtr<ABI::Windows::Media::IMusicDisplayProperties>
 		smtc_music_display_properties;
 
-	ComPtr<ABI::Windows::Storage::Streams::IDataWriter>
-		thumbnail_pic_data_writer;
-
-	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStream>
-		thumbnail_pic_stream;
-
-	ComPtr<ABI::Windows::Storage::Streams::IRandomAccessStreamReference>
-		thumbnail_pic_stream_reference;
-
 	EventRegistrationToken event_registration_token = EventRegistrationToken{ 0 };
 
 	static HRESULT button_pressed_callback(
 		ABI::Windows::Media::ISystemMediaTransportControls* sender,
 		ABI::Windows::Media::ISystemMediaTransportControlsButtonPressedEventArgs* args);
+
+	bool set_thumbnail_sync(std::vector<unsigned char> thumbnail_bytes);
+	bool set_thumbnail_async(std::vector<unsigned char> thumbnail_bytes);
 
 public:
 	static WindowsSystemMediaTransportControlsWrapper& get_instance()

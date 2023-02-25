@@ -7,9 +7,14 @@
 #endif
 #include <SystemMediaTransportControlsInterop.h>
 #include <wrl/event.h>
+#include <shcore.h>
+#include <Shlwapi.h>
 
 #include "playback_controls.h"
 #include "winamp_playback_wrapper.h"
+
+#pragma comment(lib, "shcore.lib")
+#pragma comment(lib, "ShLwApi.lib")
 
 using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::Media;
@@ -98,7 +103,7 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 	}
 
 	hr = (this->smtc)->
-		put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
+		put_PlaybackStatus(MediaPlaybackStatus::MediaPlaybackStatus_Stopped);
 	if (FAILED(hr))
 	{
 		initialized = false;
@@ -113,6 +118,8 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 	}
 
 	initialized = true;
+	set_artist_and_track(L"Winamp", L"");
+
 	return true;
 }
 
@@ -123,7 +130,13 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 		return false;
 	}
 
-	HRESULT hr = (this->smtc_display_updater)->put_Type(MediaPlaybackType_Music);
+	HRESULT hr = (this->smtc)->put_IsEnabled(true);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	hr = (this->smtc_display_updater)->put_Type(MediaPlaybackType::MediaPlaybackType_Music);
 	if (FAILED(hr))
 	{
 		return false;
@@ -164,19 +177,19 @@ bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackSta
 	switch (playback_status) {
 	case PlaybackState::stopped:
 		hr = (this->smtc)->
-			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
+			put_PlaybackStatus(MediaPlaybackStatus::MediaPlaybackStatus_Stopped);
 		break;
 	case PlaybackState::paused:
 		hr = (this->smtc)->
-			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Paused);
+			put_PlaybackStatus(MediaPlaybackStatus::MediaPlaybackStatus_Paused);
 		break;
 	case PlaybackState::playing:
 		hr = (this->smtc)->
-			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Playing);
+			put_PlaybackStatus(MediaPlaybackStatus::MediaPlaybackStatus_Playing);
 		break;
 	default:
 		hr = (this->smtc)->
-			put_PlaybackStatus(ABI::Windows::Media::MediaPlaybackStatus_Stopped);
+			put_PlaybackStatus(MediaPlaybackStatus::MediaPlaybackStatus_Stopped);
 	}
 
 	if (FAILED(hr))
@@ -195,6 +208,96 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 		return false;
 	}
 
+	if (thumbnail_bytes.empty())
+	{
+		return this->clear_thumbnail();
+	}
+	else
+	{
+		return this->set_thumbnail_sync(thumbnail_bytes);
+	}
+}
+
+bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail_sync(std::vector<unsigned char> thumbnail_bytes)
+{
+	if (!initialized || this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
+
+	HRESULT hr;
+	bool cover_loaded = false;
+	if (thumbnail_bytes.size() > 0)
+	{
+		ComPtr<IStream> thumbnail_bytes_stream;
+		thumbnail_bytes_stream.Attach(
+			SHCreateMemStream((const BYTE*)thumbnail_bytes.data(), (UINT)thumbnail_bytes.size()));
+		if (thumbnail_bytes_stream != nullptr)
+		{
+			ComPtr<IRandomAccessStream> thumbnail_pic_stream;
+			hr = CreateRandomAccessStreamOverStream(
+				thumbnail_bytes_stream.Get(),
+				BSOS_DEFAULT,
+				__uuidof(IRandomAccessStream),
+				(void**)thumbnail_pic_stream.ReleaseAndGetAddressOf());
+			if (FAILED(hr))
+			{
+				return false;
+			}
+
+			ComPtr<IRandomAccessStreamReferenceStatics>	reference_statics;
+			hr = GetActivationFactory(
+				HStringReference(RuntimeClass_Windows_Storage_Streams_RandomAccessStreamReference).Get(),
+				reference_statics.GetAddressOf());
+			if (FAILED(hr))
+			{
+				return false;
+			}
+
+			ComPtr<IRandomAccessStreamReference> thumbnail_pic_stream_reference;
+			hr = reference_statics->CreateFromStream(thumbnail_pic_stream.Get(),
+				thumbnail_pic_stream_reference.ReleaseAndGetAddressOf());
+			if (FAILED(hr))
+			{
+				return false;
+			}
+
+			hr = (this->smtc_display_updater)->put_Thumbnail(thumbnail_pic_stream_reference.Get());
+			if (FAILED(hr))
+			{
+				return false;
+			}
+
+			cover_loaded = true;
+		}
+	}
+
+	if (!cover_loaded)
+	{
+		hr = (this->smtc_display_updater)->put_Thumbnail(nullptr);
+		if (FAILED(hr))
+		{
+			return false;
+		}
+	}
+
+	hr = (this->smtc_display_updater)->Update();
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail_async(std::vector<unsigned char> thumbnail_bytes)
+{
+	if (!initialized || this->smtc_display_updater == nullptr)
+	{
+		return false;
+	}
+
+	ComPtr<IRandomAccessStream> thumbnail_pic_stream;
 	HRESULT hr = ActivateInstance(
 		HStringReference(RuntimeClass_Windows_Storage_Streams_InMemoryRandomAccessStream).Get(),
 		thumbnail_pic_stream.GetAddressOf());
@@ -219,6 +322,7 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 		return false;
 	}
 
+	ComPtr<IDataWriter>	thumbnail_pic_data_writer;
 	hr = data_writer_factory->CreateDataWriter(output_stream.Get(),
 		thumbnail_pic_data_writer.GetAddressOf());
 	if (FAILED(hr))
@@ -242,7 +346,7 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 
 	auto store_async_callback =
 		Callback<IAsyncOperationCompletedHandler<unsigned int>>(
-			[this](IAsyncOperation<unsigned int>* async_op,
+			[&](IAsyncOperation<unsigned int>* async_op,
 				AsyncStatus async_status) mutable
 			{
 				// Check the async operation completed successfully.
@@ -267,6 +371,7 @@ bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsig
 						return hr;
 					}
 
+					ComPtr<IRandomAccessStreamReference> thumbnail_pic_stream_reference;
 					result = reference_statics->CreateFromStream(thumbnail_pic_stream.Get(),
 						&thumbnail_pic_stream_reference);
 					if (FAILED(result))
