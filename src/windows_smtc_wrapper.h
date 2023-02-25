@@ -35,9 +35,6 @@ private:
 		ABI::Windows::Media::ISystemMediaTransportControls* sender,
 		ABI::Windows::Media::ISystemMediaTransportControlsButtonPressedEventArgs* args);
 
-	bool set_thumbnail_sync(std::vector<unsigned char> thumbnail_bytes);
-	bool set_thumbnail_async(std::vector<unsigned char> thumbnail_bytes);
-
 public:
 	static WindowsSystemMediaTransportControlsWrapper& get_instance()
 	{
