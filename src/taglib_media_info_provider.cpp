@@ -160,6 +160,7 @@ AlbumArt TaglibMediaInfoProvider::extract_album_art(const TagLib::FileRef& fr)
 
 MediaInfo TaglibMediaInfoProvider::get_metadata_of_song(std::wstring filename)
 {
+	MediaInfo song_metadata = MediaInfo(L"", L"");
 	if (!filename.empty()) {
 		const TagLib::FileRef f(filename.c_str(), true);
 		if (f.tag() != nullptr && !f.tag()->isEmpty())
@@ -167,9 +168,9 @@ MediaInfo TaglibMediaInfoProvider::get_metadata_of_song(std::wstring filename)
 			TagLib::String artist = f.tag()->artist();
 			TagLib::String title = f.tag()->title();
 			AlbumArt album_art = extract_album_art(f);
-			return MediaInfo(artist.toWString(), title.toWString(), album_art);
+			song_metadata = MediaInfo(artist.toWString(), title.toWString(), album_art);
 		}
 	}
 
-	return MediaInfo(L"", L"");
+	return song_metadata;
 }
