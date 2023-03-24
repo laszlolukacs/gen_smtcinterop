@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "winamp-modern-windows-smtc-integration-generic-plugin",
+  "name": "gen-smtcinterop-winamp-plugin",
   "version": "1.0",
   "dependencies": [
     {

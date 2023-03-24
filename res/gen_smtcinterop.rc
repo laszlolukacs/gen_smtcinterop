@@ -1,0 +1,58 @@
+// Microsoft Visual C++ resource script.
+
+#include <winres.h>
+#include "../src/resource.h"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1, 0, 0, 0
+PRODUCTVERSION 1, 0, 0, 0
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40000L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+BLOCK "StringFileInfo"
+BEGIN
+BLOCK "040904b0"
+BEGIN
+VALUE "CompanyName", "Laszlo Lukacs"
+VALUE "FileDescription", "System Media Transport Controls Interoperability Winamp Plug-in"
+VALUE "FileVersion", "1.0"
+VALUE "InternalName", "gen_smtcinterop"
+VALUE "LegalCopyright", "Copyright (C) 2020 Laszlo Lukacs, Released under GPL v2"
+VALUE "OriginalFilename", "gen_smtcinterop.dll"
+VALUE "ProductName", "System Media Transport Controls Interoperability Winamp Plug-in"
+VALUE "ProductVersion", "1.0"
+END
+END
+BLOCK "VarFileInfo"
+BEGIN
+VALUE "Translation", 0x409, 1200
+END
+END
+
+STRINGTABLE
+BEGIN
+IDS_WIN_VER_TOO_LOW L"This plugin requires at least Windows 10 to work properly. It will not function on your system."
+IDS_ABOUT_WINDOW_TITLE L"System Media Transport Controls Interop"
+IDS_ABOUT_HEADER L"System Media Transport Controls Interoperability Winamp Plug-in"
+IDS_ABOUT_CONTENT L"Version 1.0\nCopyright (C) 2020 Laszlo Lukacs\n\n\
+		This program is free software; you can redistribute it and/or modify\n\
+		it under the terms of the GNU General Public License as published by\n\
+		the Free Software Foundation; either version 2 of the License, or\n\
+		(at your option) any later version.\n\n\
+		This program is distributed in the hope that it will be useful,\n\
+		but WITHOUT ANY WARRANTY; without even the implied warranty of\n\
+		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n\
+		GNU General Public License for more details.\n\n\
+		You should have received a copy of the GNU General Public License along\n\
+		with this program; if not, write to the Free Software Foundation, Inc.,\n\
+		51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."
+END
+
+IDB_NO_COVER_PNG PNG "nocover.png"
