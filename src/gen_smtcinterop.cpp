@@ -78,7 +78,7 @@ int init()
 	g_lpOriginalWindowProc = (WNDPROC)(SetWindowLongPtr(plugin.hwndParent, GWLP_WNDPROC, (LONG_PTR)WindowProc));
 #ifdef _DEBUG
 	// If everything works you should see this message when you start Winamp once your plugin has been installed.
-	std::wstring debug_message = L"init() event for gen_smtc finished. Plugin installed successfully!\n";
+	std::wstring debug_message = L"init() event for gen_smtcinterop finished. Plugin installed successfully!\n";
 	OutputDebugString(debug_message.c_str());
 #endif
 

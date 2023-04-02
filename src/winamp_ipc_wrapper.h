@@ -29,6 +29,10 @@ struct WinampIpcWrapper
 				WM_WA_IPC,
 				current_playlist_index,
 				IPC_GETPLAYLISTFILEW);
+		if (filename == nullptr)
+		{
+			return std::wstring();
+		}
 
 		return std::wstring(filename);
 	}
@@ -48,6 +52,10 @@ struct WinampIpcWrapper
 				WM_WA_IPC,
 				current_playlist_index,
 				IPC_GETPLAYLISTTITLEW);
+		if (track_title == nullptr)
+		{
+			return std::wstring();
+		}
 
 		return std::wstring(track_title);
 	}
