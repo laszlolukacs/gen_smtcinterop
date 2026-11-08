@@ -10,6 +10,7 @@
 #include <shcore.h>
 #include <Shlwapi.h>
 
+#include "media_key_throttle.h"
 #include "playback_controls.h"
 #include "winamp_playback_wrapper.h"
 
@@ -66,6 +67,7 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 		initialized = false;
 		return false;
 	}
+	this->smtc_enabled = true;
 
 	hr = (this->smtc)->put_IsPlayEnabled(true);
 	if (FAILED(hr))
@@ -123,6 +125,28 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 	return true;
 }
 
+bool WindowsSystemMediaTransportControlsWrapper::is_enabled() const
+{
+	return this->initialized && this->smtc_enabled;
+}
+
+bool WindowsSystemMediaTransportControlsWrapper::set_enabled(bool enabled)
+{
+	if (!initialized || this->smtc == nullptr)
+	{
+		return false;
+	}
+
+	HRESULT hr = (this->smtc)->put_IsEnabled(enabled);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+	this->smtc_enabled = enabled;
+
+	return true;
+}
+
 bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstring artist_name, std::wstring track_name)
 {
 	if (!initialized || this->smtc_display_updater == nullptr)
@@ -130,7 +154,7 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 		return false;
 	}
 
-	HRESULT hr = (this->smtc)->put_IsEnabled(true);
+	HRESULT hr = (this->smtc)->put_IsEnabled(this->smtc_enabled);
 	if (FAILED(hr))
 	{
 		return false;
@@ -161,7 +185,7 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 	}
 
 	hr = (this->smtc_display_updater)->Update();
-	return FAILED(hr);
+	return SUCCEEDED(hr);
 }
 
 bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackState playback_status)
@@ -198,7 +222,7 @@ bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackSta
 	}
 
 	hr = (this->smtc_display_updater)->Update();
-	return FAILED(hr);
+	return SUCCEEDED(hr);
 }
 
 bool WindowsSystemMediaTransportControlsWrapper::set_thumbnail(std::vector<unsigned char> thumbnail_bytes)
@@ -315,7 +339,12 @@ bool WindowsSystemMediaTransportControlsWrapper::clear_metadata()
 	}
 
 	hr = (this->smtc)->put_IsEnabled(false);
-	return FAILED(hr);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+	this->smtc_enabled = false;
+	return true;
 }
 
 HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
@@ -325,11 +354,23 @@ HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
 	PlaybackControls& playback_controls = WinampPlaybackWrapper::get_instance();
 	SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
 
+	if (!smtc.is_enabled())
+	{
+		return S_OK;
+	}
+
 	SystemMediaTransportControlsButton button;
 	HRESULT hr = args->get_Button(&button);
 	if (FAILED(hr))
 	{
 		return hr;
+	}
+
+	if (!media_key_action_allowed(media_key_action::from_smtc_button((int)button)))
+	{
+		// The same physical key press was already handled moments ago (e.g.
+		// via WM_APPCOMMAND in the window procedure). Swallow it.
+		return S_OK;
 	}
 
 	switch (button) {

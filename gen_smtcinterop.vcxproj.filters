@@ -51,6 +51,9 @@
     <ClInclude Include="src\album_art.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\media_key_throttle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>

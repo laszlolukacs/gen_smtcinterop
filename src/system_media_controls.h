@@ -12,6 +12,7 @@
 struct SystemMediaControls
 {
 	virtual bool initialize(HWND = nullptr) = 0;
+	virtual bool is_enabled() const = 0;
 	virtual bool set_artist_and_track(std::wstring artist_name, std::wstring track_name) = 0;
 	virtual bool set_thumbnail(std::vector<unsigned char> thumbnail_bytes) = 0;
 	virtual bool set_playback_status(PlaybackState playback_status) = 0;

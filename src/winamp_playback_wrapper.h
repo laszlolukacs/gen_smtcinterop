@@ -14,6 +14,8 @@ private:
 
 	HWND window = nullptr;
 
+	[[nodiscard]] bool is_playing() const;
+
 public:
 	static WinampPlaybackWrapper& get_instance()
 	{
