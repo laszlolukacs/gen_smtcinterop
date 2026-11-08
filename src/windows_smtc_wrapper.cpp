@@ -10,10 +10,8 @@
 #include <shcore.h>
 #include <Shlwapi.h>
 
-#include "debug_log.h"
 #include "media_key_throttle.h"
 #include "playback_controls.h"
-#include "winamp_ipc_wrapper.h"
 #include "winamp_playback_wrapper.h"
 
 #pragma comment(lib, "shcore.lib")
@@ -27,7 +25,6 @@ using namespace Microsoft::WRL::Wrappers;
 
 bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 {
-	debug_log(L"smtc initialize: hwnd=%p", hwnd);
 	if (hwnd == nullptr || !IsWindow(hwnd))
 	{
 		initialized = false;
@@ -124,7 +121,6 @@ bool WindowsSystemMediaTransportControlsWrapper::initialize(HWND hwnd)
 
 	initialized = true;
 	set_artist_and_track(L"Winamp", L"");
-	debug_log(L"smtc initialize: done smtc_enabled=%d", this->smtc_enabled);
 
 	return true;
 }
@@ -136,7 +132,6 @@ bool WindowsSystemMediaTransportControlsWrapper::is_enabled() const
 
 bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstring artist_name, std::wstring track_name)
 {
-	debug_log(L"set_artist_and_track: artist=\"%ls\" track=\"%ls\"", artist_name.c_str(), track_name.c_str());
 	if (!initialized || this->smtc_display_updater == nullptr)
 	{
 		return false;
@@ -179,7 +174,6 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 
 bool WindowsSystemMediaTransportControlsWrapper::set_playback_status(PlaybackState playback_status)
 {
-	debug_log(L"set_playback_status: state=%d", (int)playback_status);
 	if (!initialized
 		|| this->smtc == nullptr
 		|| this->smtc_display_updater == nullptr)
@@ -311,7 +305,6 @@ bool WindowsSystemMediaTransportControlsWrapper::clear_thumbnail()
 
 bool WindowsSystemMediaTransportControlsWrapper::clear_metadata()
 {
-	debug_log(L"clear_metadata: initialized=%d", initialized ? 1 : 0);
 	if (!initialized || this->smtc_display_updater == nullptr)
 	{
 		return false;
@@ -349,20 +342,13 @@ HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
 	HRESULT hr = args->get_Button(&button);
 	if (FAILED(hr))
 	{
-		debug_log(L"SMTC ButtonPressed: get_Button failed hr=0x%08X", (unsigned)hr);
 		return hr;
 	}
-
-	debug_log(
-		L"SMTC ButtonPressed: button=%d state_before=%d",
-		(int)button,
-		(int)WinampIpcWrapper::wa_ipc_is_playing());
 
 	if (!media_key_action_allowed(media_key_action::from_smtc_button((int)button)))
 	{
 		// The same physical key press was already handled moments ago (e.g.
 		// via WM_APPCOMMAND in the window procedure). Swallow it.
-		debug_log(L"SMTC ButtonPressed: button=%d deduplicated", (int)button);
 		return S_OK;
 	}
 
@@ -392,11 +378,6 @@ HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
 	case SystemMediaTransportControlsButton_ChannelDown:
 		break;
 	}
-
-	debug_log(
-		L"SMTC ButtonPressed: done button=%d state_after=%d",
-		(int)button,
-		(int)WinampIpcWrapper::wa_ipc_is_playing());
 
 	return S_OK;
 }

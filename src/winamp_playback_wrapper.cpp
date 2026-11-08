@@ -4,8 +4,6 @@
 
 #include <wa_ipc.h>
 
-#include "debug_log.h"
-
 #define WINAMP_PREVIOUS_TRACK_PARAM 40044
 #define WINAMP_START_PLAYBACK_PARAM 40045
 #define WINAMP_PAUSE_PLAYBACK_PARAM 40046
@@ -37,7 +35,6 @@ void WinampPlaybackWrapper::play()
 	// key, and sending the Play command while already playing would restart
 	// the current track.
 	const bool playing = this->is_playing();
-	debug_log(L"play: window=%p playing=%d", this->window, playing ? 1 : 0);
 	if (this->window == nullptr || playing)
 	{
 		return;
@@ -56,7 +53,6 @@ void WinampPlaybackWrapper::pause()
 	// deliver both a Play and a Pause command, and toggling here would resume
 	// playback again.
 	const bool playing = this->is_playing();
-	debug_log(L"pause: window=%p playing=%d", this->window, playing ? 1 : 0);
 	if (this->window == nullptr || !playing)
 	{
 		return;

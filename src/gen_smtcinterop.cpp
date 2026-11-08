@@ -10,7 +10,6 @@
 
 #include <unordered_map>
 
-#include "debug_log.h"
 #include "media_key_throttle.h"
 #include "winamp_ipc_wrapper.h"
 #include "winamp_media_info_provider.h"
@@ -122,7 +121,6 @@ namespace
 		if (original_window_proc != nullptr && original_window_proc != WindowProc)
 		{
 			g_original_window_procs.emplace(hwnd, original_window_proc);
-			debug_log(L"subclassed window hwnd=%p", hwnd);
 		}
 	}
 
@@ -174,17 +172,11 @@ namespace
 
 		// Re-scan periodically to subclass windows that are created later
 		// (e.g. when the user opens the playlist editor or the equalizer).
-		const UINT_PTR rescan_timer = SetTimer(
+		SetTimer(
 			plugin.hwndParent,
 			window_rescan_timer_id,
 			window_rescan_interval_ms,
 			nullptr);
-
-		debug_log(
-			L"install_window_hooks: gui_thread_id=%lu rescan_timer=%llu subclassed_windows=%zu",
-			g_gui_thread_id,
-			(unsigned long long)rescan_timer,
-			g_original_window_procs.size());
 	}
 
 	void remove_window_hooks()
@@ -199,9 +191,7 @@ int init()
 #ifdef _DEBUG
 	assert(plugin.hwndParent != nullptr);
 #endif
-	debug_log(L"init: hwnd=%p", plugin.hwndParent);
 	initialized = WindowsSystemMediaTransportControlsWrapper::get_instance().initialize(plugin.hwndParent);
-	debug_log(L"init: initialized=%d smtc_enabled=%d", initialized, WindowsSystemMediaTransportControlsWrapper::get_instance().is_enabled());
 	if (!initialized)
 	{
 #ifdef _DEBUG
@@ -239,7 +229,6 @@ void quit()
 		return;
 	}
 
-	debug_log(L"quit");
 	WindowsSystemMediaTransportControlsWrapper::get_instance().clear_metadata();
 	WinampIpcWrapper::hwnd = nullptr;
 
@@ -259,7 +248,6 @@ void on_song_change()
 	auto const current_filename = WinampIpcWrapper::wa_ipc_get_current_filename();
 	MediaInfoProvider& media_info_provider = TaglibMediaInfoProvider::get_instance();
 	auto media_info = media_info_provider.get_metadata_of_song(current_filename);
-	debug_log(L"on_song_change: filename=\"%ls\" metadata_empty=%d", current_filename.c_str(), media_info.empty() ? 1 : 0);
 	if (media_info.empty())
 	{
 		// fall back to Winamp API when TagLib cannot extract metadata (e.g. in case of online streams)
@@ -299,13 +287,11 @@ LRESULT CALLBACK WindowProc(
 			if (wParam == IPC_CB_MISC_TITLE)
 			{
 				// whenever the currently played song changes in Winamp, the SMTC display will be updated
-				debug_log(L"WndProc: IPC_CB_MISC_TITLE");
 				on_song_change();
 			}
 			else if (wParam == IPC_CB_MISC_STATUS)
 			{
 				const PlaybackState state = WinampIpcWrapper::wa_ipc_is_playing();
-				debug_log(L"WndProc: IPC_CB_MISC_STATUS state=%d", (int)state);
 				WindowsSystemMediaTransportControlsWrapper::get_instance().set_playback_status(state);
 			}
 		}
@@ -320,13 +306,6 @@ LRESULT CALLBACK WindowProc(
 	if (uMsg == WM_APPCOMMAND)
 	{
 		const WORD appcommand = GET_APPCOMMAND_LPARAM(lParam);
-		debug_log(
-			L"WndProc: WM_APPCOMMAND hwnd=%p appcommand=%u lParam=%p wParam=%p initialized=%d",
-			hwnd,
-			(unsigned)appcommand,
-			(void*)lParam,
-			(void*)wParam,
-			initialized ? 1 : 0);
 
 		if (initialized)
 		{
@@ -341,7 +320,6 @@ LRESULT CALLBACK WindowProc(
 			{
 				// The same physical key press was already handled moments ago
 				// (e.g. via the SMTC button pressed callback). Swallow it.
-				debug_log(L"WndProc: WM_APPCOMMAND appcommand=%u deduplicated", (unsigned)appcommand);
 				return TRUE;
 			}
 
@@ -387,7 +365,6 @@ LRESULT CALLBACK WindowProc(
 
 			if (handled)
 			{
-				debug_log(L"WndProc: WM_APPCOMMAND appcommand=%u handled", (unsigned)appcommand);
 				return TRUE;
 			}
 		}
