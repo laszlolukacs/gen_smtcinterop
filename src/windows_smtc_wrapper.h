@@ -18,6 +18,8 @@ private:
 
 	bool initialized = false;
 
+	bool smtc_enabled = false;
+
 	HWND window = nullptr;
 
 	ComPtr<ABI::Windows::Media::ISystemMediaTransportControls>
@@ -48,6 +50,7 @@ public:
 		WindowsSystemMediaTransportControlsWrapper const&) = delete;
 
 	bool initialize(HWND = nullptr) override;
+	bool is_enabled() const override;
 	bool set_artist_and_track(std::wstring artist_name, std::wstring track_name) override;
 	bool set_playback_status(PlaybackState playback_status) override;
 	bool set_thumbnail(std::vector<unsigned char> thumbnail_bytes) override;

@@ -5,7 +5,7 @@
 
 #include <windows.h>
 #include <CommCtrl.h>
-#include <VersionHelpers.h>
+#include <vector>
 
 #include "resource.h"
 
@@ -25,11 +25,6 @@ struct WindowsResourcesWrapper
 		TaskDialogConfig.pszWindowTitle = MAKEINTRESOURCE(IDS_ABOUT_WINDOW_TITLE);
 		TaskDialogConfig.pszMainInstruction = MAKEINTRESOURCE(IDS_ABOUT_HEADER);
 		TaskDialogConfig.pszContent = MAKEINTRESOURCE(IDS_ABOUT_CONTENT);
-		if (!IsWindows10OrGreater())
-		{
-			TaskDialogConfig.pszFooter = MAKEINTRESOURCE(IDS_WIN_VER_TOO_LOW);
-			TaskDialogConfig.pszFooterIcon = TD_ERROR_ICON;
-		}
 
 		TaskDialogIndirect(&TaskDialogConfig, &nButtonPressed, NULL, NULL);
 	}

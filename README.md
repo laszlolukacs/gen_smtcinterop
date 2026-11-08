@@ -7,9 +7,9 @@ Windows [System Media Transport Controls](https://learn.microsoft.com/en-us/wind
 Propagates the metadata of all contents that Winamp supports to SMTC and lets you focus and control Winamp from the Windows Media Controls. Provides the functionality via a single binary (DLL).
 
 ## System requirements
-* [Windows 10](https://www.microsoft.com/en-us/windows) or newer
-* [Winamp 5.9.1](https://download.nullsoft.com/winamp/misc/Winamp591_10029_final_full_en-us.exe)
-* [Visual C++ 2019 runtime](https://aka.ms/vs/17/release/vc_redist.x86.exe) (should be already installed along with Winamp 5.9.1)
+* [Windows 10](https://www.microsoft.com/en-us/windows) or newer (required for System Media Transport Controls)
+* [Winamp 5.666](https://forums.winamp.com/forum/historical-product-discussion/winamp/winamp-discussion/316142-winamp-5-666-released-build-3516) or newer (e.g. Winamp 5.9.x)
+* [Visual C++ 2019 runtime](https://aka.ms/vs/17/release/vc_redist.x86.exe) if not already installed
 
 ## Installation
 1. Download the plugin from Releases
@@ -21,7 +21,7 @@ Propagates the metadata of all contents that Winamp supports to SMTC and lets yo
   * must be integrated with MSBuild and Visual Studio using `vcpkg integrate install` to be able to reference TagLib
   * recommended to add `vcpkg` to `PATH`
 * [Windows 10 SDK latest](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive/)
-* [Winamp 5.55 SDK](http://wiki.winamp.com/#Plug-in_Developer)
+* [Winamp 5.55 SDK](http://wiki.winamp.com/#Plug-in_Developer) (headers are compatible with Winamp 5.666 and newer)
 * [TagLib](https://taglib.org/) ([statically linked](https://levelup.gitconnected.com/how-to-statically-link-c-libraries-with-vcpkg-visual-studio-2019-435c2d4ace03))
 
 ## Summary of set up

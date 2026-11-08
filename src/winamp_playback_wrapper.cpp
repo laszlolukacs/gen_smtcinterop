@@ -4,8 +4,11 @@
 
 #include <wa_ipc.h>
 
+#include "debug_log.h"
+
 #define WINAMP_PREVIOUS_TRACK_PARAM 40044
 #define WINAMP_START_PLAYBACK_PARAM 40045
+#define WINAMP_PAUSE_PLAYBACK_PARAM 40046
 #define WINAMP_STOP_PLAYBACK_PARAM 40047
 #define WINAMP_NEXT_TRACK_PARAM 40048
 
@@ -14,34 +17,56 @@ void WinampPlaybackWrapper::set_window(HWND window)
 	this->window = window;
 }
 
-void WinampPlaybackWrapper::play()
+bool WinampPlaybackWrapper::is_playing() const
 {
 	if (this->window == nullptr)
+	{
+		return false;
+	}
+
+	return SendMessage(
+		this->window,
+		WM_WA_IPC,
+		0,
+		IPC_ISPLAYING) == 1;
+}
+
+void WinampPlaybackWrapper::play()
+{
+	// Play must be idempotent: SMTC and Winamp can both act on the same media
+	// key, and sending the Play command while already playing would restart
+	// the current track.
+	const bool playing = this->is_playing();
+	debug_log(L"play: window=%p playing=%d", this->window, playing ? 1 : 0);
+	if (this->window == nullptr || playing)
 	{
 		return;
 	}
 
-	const int is_playing = SendMessage(
-		this->window,
-		WM_USER,
-		0,
-		IPC_ISPLAYING) == 1;
-
 	SendMessage(
 		this->window,
 		WM_COMMAND,
-		WINAMP_START_PLAYBACK_PARAM + is_playing,
+		WINAMP_START_PLAYBACK_PARAM,
 		0);
 }
 
 void WinampPlaybackWrapper::pause()
 {
-	if (this->window == nullptr)
+	// Pause must be absolute, not a toggle: a hardware play/pause key can
+	// deliver both a Play and a Pause command, and toggling here would resume
+	// playback again.
+	const bool playing = this->is_playing();
+	debug_log(L"pause: window=%p playing=%d", this->window, playing ? 1 : 0);
+	if (this->window == nullptr || !playing)
 	{
 		return;
 	}
 
-	this->play();
+	SendMessage(
+		this->window,
+		WM_COMMAND,
+		WINAMP_PAUSE_PLAYBACK_PARAM,
+		0);
 }
 
 void WinampPlaybackWrapper::next_track()
