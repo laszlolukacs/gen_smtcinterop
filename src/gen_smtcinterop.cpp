@@ -58,6 +58,48 @@ namespace
 	const UINT_PTR window_rescan_timer_id = 0x534D5443; // 'SMTC'
 	const UINT window_rescan_interval_ms = 1000;
 
+	// When disabled, the plugin neither handles media keys nor updates the
+	// SMTC session; the session itself is disabled so that Winamp disappears
+	// from the Windows media overlay entirely.
+	bool g_plugin_enabled = true;
+
+	// When enabled, handled media keys are forwarded to the shell so that it
+	// shows its media overlay even while Winamp is focused. The SMTC button
+	// pressed callback this triggers is deduplicated by the media key
+	// throttle, so still exactly one action is performed per key press.
+	bool g_show_media_overlay = false;
+
+	const wchar_t* get_winamp_ini_path()
+	{
+		return (const wchar_t*)SendMessageW(plugin.hwndParent, WM_WA_IPC, 0, IPC_GETINIFILEW);
+	}
+
+	void load_configuration()
+	{
+		const wchar_t* const ini_path = get_winamp_ini_path();
+		if (ini_path != nullptr)
+		{
+			g_plugin_enabled = GetPrivateProfileIntW(
+				L"gen_smtcinterop", L"enabled", 1, ini_path) != 0;
+			g_show_media_overlay = GetPrivateProfileIntW(
+				L"gen_smtcinterop", L"show_media_overlay", 0, ini_path) != 0;
+		}
+	}
+
+	void save_configuration()
+	{
+		const wchar_t* const ini_path = get_winamp_ini_path();
+		if (ini_path != nullptr)
+		{
+			WritePrivateProfileStringW(
+				L"gen_smtcinterop", L"enabled",
+				g_plugin_enabled ? L"1" : L"0", ini_path);
+			WritePrivateProfileStringW(
+				L"gen_smtcinterop", L"show_media_overlay",
+				g_show_media_overlay ? L"1" : L"0", ini_path);
+		}
+	}
+
 	bool has_winamp_window_class(HWND hwnd)
 	{
 		wchar_t class_name[64] = {};
@@ -205,6 +247,12 @@ int init()
 	WinampPlaybackWrapper::get_instance().set_window(plugin.hwndParent);
 	WinampMediaInfoProvider::get_instance().set_window(plugin.hwndParent);
 
+	load_configuration();
+	if (!g_plugin_enabled)
+	{
+		WindowsSystemMediaTransportControlsWrapper::get_instance().set_enabled(false);
+	}
+
 	on_song_change();
 
 	install_window_hooks();
@@ -219,7 +267,35 @@ int init()
 
 void config()
 {
-	WindowsResourcesWrapper::show_about_taskdialog(plugin.hDllInstance);
+	int config_mode = 0; // CONFIG_MODE_ENABLED
+	if (!g_plugin_enabled)
+	{
+		config_mode = 2; // CONFIG_MODE_DISABLED
+	}
+	else if (g_show_media_overlay)
+	{
+		config_mode = 1; // CONFIG_MODE_ENABLED_OVERLAY
+	}
+
+	WindowsResourcesWrapper::show_about_taskdialog(plugin.hDllInstance, config_mode);
+
+	const bool enabled = config_mode != 2;
+	const bool show_media_overlay = config_mode == 1;
+	if (enabled != g_plugin_enabled || show_media_overlay != g_show_media_overlay)
+	{
+		g_plugin_enabled = enabled;
+		g_show_media_overlay = show_media_overlay;
+		save_configuration();
+
+		auto& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+		smtc.set_enabled(enabled);
+		if (enabled)
+		{
+			// refresh the session so it reflects the current song and status
+			on_song_change();
+			smtc.set_playback_status(WinampIpcWrapper::wa_ipc_is_playing());
+		}
+	}
 }
 
 void quit()
@@ -282,7 +358,7 @@ LRESULT CALLBACK WindowProc(
 {
 	if (uMsg == WM_WA_IPC && hwnd == plugin.hwndParent)
 	{
-		if (lParam == IPC_CB_MISC && initialized)
+		if (lParam == IPC_CB_MISC && initialized && g_plugin_enabled)
 		{
 			if (wParam == IPC_CB_MISC_TITLE)
 			{
@@ -307,7 +383,7 @@ LRESULT CALLBACK WindowProc(
 	{
 		const WORD appcommand = GET_APPCOMMAND_LPARAM(lParam);
 
-		if (initialized)
+		if (initialized && g_plugin_enabled)
 		{
 			// Winamp processes multimedia keys in every one of its top-level
 			// windows and then lets DefWindowProc forward the message to the
@@ -365,6 +441,21 @@ LRESULT CALLBACK WindowProc(
 
 			if (handled)
 			{
+				// Reflect the new playback state in the media overlay right
+				// away; Winamp's own IPC_CB_MISC_STATUS broadcast arrives
+				// with a noticeable delay, which would leave the overlay
+				// showing a stale play/pause button.
+				WindowsSystemMediaTransportControlsWrapper::get_instance()
+					.set_playback_status(WinampIpcWrapper::wa_ipc_is_playing());
+
+				if (g_show_media_overlay)
+				{
+					// Forward the command to the shell so that it shows its
+					// media overlay even while Winamp is focused. The SMTC
+					// button pressed callback that this triggers is
+					// deduplicated by the media key throttle.
+					DefWindowProcW(hwnd, uMsg, wParam, lParam);
+				}
 				return TRUE;
 			}
 		}

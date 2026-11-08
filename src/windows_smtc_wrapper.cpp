@@ -130,6 +130,23 @@ bool WindowsSystemMediaTransportControlsWrapper::is_enabled() const
 	return this->initialized && this->smtc_enabled;
 }
 
+bool WindowsSystemMediaTransportControlsWrapper::set_enabled(bool enabled)
+{
+	if (!initialized || this->smtc == nullptr)
+	{
+		return false;
+	}
+
+	HRESULT hr = (this->smtc)->put_IsEnabled(enabled);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+	this->smtc_enabled = enabled;
+
+	return true;
+}
+
 bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstring artist_name, std::wstring track_name)
 {
 	if (!initialized || this->smtc_display_updater == nullptr)
@@ -137,12 +154,11 @@ bool WindowsSystemMediaTransportControlsWrapper::set_artist_and_track(std::wstri
 		return false;
 	}
 
-	HRESULT hr = (this->smtc)->put_IsEnabled(true);
+	HRESULT hr = (this->smtc)->put_IsEnabled(this->smtc_enabled);
 	if (FAILED(hr))
 	{
 		return false;
 	}
-	this->smtc_enabled = true;
 
 	hr = (this->smtc_display_updater)->put_Type(MediaPlaybackType::MediaPlaybackType_Music);
 	if (FAILED(hr))
@@ -337,6 +353,11 @@ HRESULT WindowsSystemMediaTransportControlsWrapper::button_pressed_callback(
 {
 	PlaybackControls& playback_controls = WinampPlaybackWrapper::get_instance();
 	SystemMediaControls& smtc = WindowsSystemMediaTransportControlsWrapper::get_instance();
+
+	if (!smtc.is_enabled())
+	{
+		return S_OK;
+	}
 
 	SystemMediaTransportControlsButton button;
 	HRESULT hr = args->get_Button(&button);

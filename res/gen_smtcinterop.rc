@@ -52,6 +52,9 @@ IDS_ABOUT_CONTENT L"Version 1.0\nCopyright (C) 2020 Laszlo Lukacs\n\n\
 		You should have received a copy of the GNU General Public License along\n\
 		with this program; if not, write to the Free Software Foundation, Inc.,\n\
 		51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."
+	IDS_CONFIG_MODE_ENABLED L"Handle media keys (recommended)"
+	IDS_CONFIG_MODE_ENABLED_OVERLAY L"Handle media keys and show the Windows media overlay while Winamp is focused"
+	IDS_CONFIG_MODE_DISABLED L"Disabled - ignore media keys and stay hidden from the Windows media overlay"
 END
 
 IDB_NO_COVER_PNG PNG "nocover.png"

@@ -51,6 +51,7 @@ public:
 
 	bool initialize(HWND = nullptr) override;
 	bool is_enabled() const override;
+	bool set_enabled(bool enabled);
 	bool set_artist_and_track(std::wstring artist_name, std::wstring track_name) override;
 	bool set_playback_status(PlaybackState playback_status) override;
 	bool set_thumbnail(std::vector<unsigned char> thumbnail_bytes) override;

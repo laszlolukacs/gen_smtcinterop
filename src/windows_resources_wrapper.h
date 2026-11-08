@@ -13,9 +13,17 @@
 
 struct WindowsResourcesWrapper
 {
-	static void show_about_taskdialog(HINSTANCE hInstance)
+	static void show_about_taskdialog(HINSTANCE hInstance, int& config_mode)
 	{
+		const TASKDIALOG_BUTTON radio_buttons[] =
+		{
+			{ CONFIG_MODE_ENABLED, MAKEINTRESOURCE(IDS_CONFIG_MODE_ENABLED) },
+			{ CONFIG_MODE_ENABLED_OVERLAY, MAKEINTRESOURCE(IDS_CONFIG_MODE_ENABLED_OVERLAY) },
+			{ CONFIG_MODE_DISABLED, MAKEINTRESOURCE(IDS_CONFIG_MODE_DISABLED) },
+		};
+
 		int nButtonPressed = 0;
+		int nRadioButton = 0;
 		TASKDIALOGCONFIG TaskDialogConfig = { 0 };
 		TaskDialogConfig.cbSize = sizeof(TASKDIALOGCONFIG);
 		TaskDialogConfig.hwndParent = NULL;
@@ -25,8 +33,17 @@ struct WindowsResourcesWrapper
 		TaskDialogConfig.pszWindowTitle = MAKEINTRESOURCE(IDS_ABOUT_WINDOW_TITLE);
 		TaskDialogConfig.pszMainInstruction = MAKEINTRESOURCE(IDS_ABOUT_HEADER);
 		TaskDialogConfig.pszContent = MAKEINTRESOURCE(IDS_ABOUT_CONTENT);
+		TaskDialogConfig.pRadioButtons = radio_buttons;
+		TaskDialogConfig.cRadioButtons = ARRAYSIZE(radio_buttons);
+		TaskDialogConfig.nDefaultRadioButton = CONFIG_MODE_ENABLED + config_mode;
 
-		TaskDialogIndirect(&TaskDialogConfig, &nButtonPressed, NULL, NULL);
+		const HRESULT hr = TaskDialogIndirect(&TaskDialogConfig, &nButtonPressed, &nRadioButton, NULL);
+		if (SUCCEEDED(hr) &&
+			nRadioButton >= CONFIG_MODE_ENABLED &&
+			nRadioButton <= CONFIG_MODE_DISABLED)
+		{
+			config_mode = nRadioButton - CONFIG_MODE_ENABLED;
+		}
 	}
 
 	static std::vector<unsigned char> get_default_album_art(LPCWSTR lpModuleName)
